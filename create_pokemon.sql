@@ -32,11 +32,9 @@ CREATE TABLE trainer
 CREATE TABLE owned_by
 (
     pokemon_id INT,
-    type_id INT,
     trainer_id INT,
     FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
-    FOREIGN KEY (trainer_id) REFERENCES trainer(id),
-    UNIQUE(type_ids, pokemon_id)
+    FOREIGN KEY (trainer_id) REFERENCES trainer(id)
 );
 
 
