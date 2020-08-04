@@ -22,7 +22,6 @@ CREATE TABLE Trainer
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(20) NOT NULL,
     town VARCHAR(20),
-    UNIQUE(name, town)
 );
 
 
@@ -51,7 +50,12 @@ CREATE TABLE Of_type
     FOREIGN KEY (type_id) REFERENCES types(id),
     PRIMARY KEY(pokemon_id,type_id)
 );
--- USE pokemon_data;
+USE pokemon_data;
+DELETE FROM Owned_by O
+WHERE O.pokemon_id = 1 AND O.trainer_id = 1
+
+DELETE FROM Owned_by
+WHERE pokemon_id = 1 AND trainer_id = 1;
 
 -- SELECT COUNT(*) FROM pokemon;
 -- SELECT COUNT(*) FROM trainer;
@@ -59,6 +63,6 @@ CREATE TABLE Of_type
 -- SELECT COUNT(*) FROM types;
 -- SELECT COUNT(*) FROM of_type;
 
-VIEW Pok_with_type AS
-SELECT *
-FROM Pokemon P JOIN Of_type O on P.id = O.pokemon_id
+-- VIEW Pok_with_type AS
+-- SELECT *
+-- FROM Pokemon P JOIN Of_type O on P.id = O.pokemon_id

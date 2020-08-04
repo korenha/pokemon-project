@@ -1,6 +1,8 @@
 import pymysql
 import json
-from initialization import connection
+from pokemon_insert import connection
+import pokemon_insert
+from pymysql import IntegrityError
 
 def get_heaviest_pokemon():
     query = "SELECT * FROM Pokemon WHERE weight_ = (\
@@ -18,16 +20,22 @@ def get_heaviest_pokemon():
 
 
 def find_by_type(type):
-    query = f"SELECT P.name_ FROM Pokemon P JOIN Type T on P.type_id = T.id  WHERE T.name = '{type}';"
+    type_id = pokemon_insert.get_type_id(type)
+    query = f"SELECT Pokemon.name\
+                FROM Pokemon JOIN Of_type on Pokemon.id = Of_type.pokemon_id\
+                WHERE Of_type.type_id = {type_id} ;"
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            ans = []
-            result = cursor.fetchone()
-            while result:
-                ans.append(result["name_"])
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                ans = []
                 result = cursor.fetchone()
-            return ans
+                while result:
+                    ans.append(result["name"])
+                    result = cursor.fetchone()
+                return ans,200
+        except IntegrityError as ex:
+            return "not found",404
     except Exception as ex:
         return {"Error": str(ex)}, 500
 
