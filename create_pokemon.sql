@@ -32,11 +32,11 @@ CREATE TABLE trainer
 CREATE TABLE owned_by
 (
     pokemon_id INT,
-    type_id INT,
+    pokemon_name INT,
     trainer_id INT,
     FOREIGN KEY (pokemon_id) REFERENCES pokemon(id),
     FOREIGN KEY (trainer_id) REFERENCES trainer(id),
-    UNIQUE(type_ids, pokemon_id)
+    UNIQUE( pokemon_name, trainer_id)
 );
 
 
@@ -56,10 +56,10 @@ CREATE TABLE of_type
 );
 
 
-USE pokemon_data;
 
-SELECT COUNT(*) FROM pokemon;
-SELECT COUNT(*) FROM trainer;
-SELECT COUNT(*) FROM owned_by;
-SELECT COUNT(*) FROM types;
-SELECT COUNT(*) FROM of_type;
+-- SELECT COUNT(*) FROM pokemon;
+-- SELECT COUNT(*) FROM trainer;
+-- SELECT COUNT(*) FROM owned_by;
+-- SELECT COUNT(*) FROM types;
+-- SELECT COUNT(*) FROM of_type;
+
