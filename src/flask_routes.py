@@ -1,97 +1,93 @@
-from flask import Flask
+from flask import Flask, Response
 import requests
-from certifi import where
-from query import get,post
+import query
 import json
-from connect import connection
-from pymysql import IntegrityError
+# from .connect import connection
+# from pymysql import IntegrityError
+
 
 app = Flask(__name__)
-# print(where())
+
 
 @app.route('/types/<pokemon>', methods=['PATCH'])
 def update_type(pokemon):
-    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon}"
-    res = requests.get(url=url, verify=False)
-    for type_ in res.json()["types"]:
-        if not get.get_type_id(type_['type']['name']):
-            post.insert_to_table("Type", f"'{type_['type']['name']}'", "name")
-        post.insert_to_table("Of_type", f"{get.get_pokeon_id(pokemon)},{get.get_type_id(type_['type']['name'])}", "pokemon_id,type_id")
+    res = requests.get(url=f"https://pokeapi.co/api/v2/pokemon/{pokemon}", verify=False)
+    query.pokemon_type.add(query.pokemon.get_pokemon_id(pokemon),
+                           [type_['type']['name'] for type_ in res.json()["types"]])
+    return Response("update")
+
 
 @app.route('/pokemon/<pokemon>', methods=['POST'])
-def add_pok(pokemon):
-    post.add_pokemon(pokemon)
-    post.add_to_of_type(pokemon['id'], pokemon['types'])
+def add_pokemon(pokemon):
+    res = requests.get(url=f"https://pokeapi.co/api/v2/pokemon/{pokemon}", verify=False).json()
+    return query.pokemon.add({"id": res["id"],
+                              "name": pokemon,
+                              "type": [type_['type']['name'] for type_ in res["types"]],
+                              "height": res["height"],
+                              "weight": res["weight"]
+                              })
 
-@app.route('/types/<type>')
-def get_by_type(type):
-    ans,error = get.find_by_type(type)
-    return json.dumps({"result":ans}),error
 
-@app.route('/pokemon/trainer/<pok>')
-def get_trainer_of_pok(pok):
-    ans,error = get.find_owners(pok)
-    return json.dumps({"result":ans}),error
+@app.route('/types/<type_>')
+def get_pokemon_by_type(type_):
+    ans, error = query.pokemon.find_pokemon_by_type(type_)
+    return json.dumps({"result": ans})
 
-@app.route('/trainer/pokemon/<tra>')
-def get_pok_of_trainer(tra):
-    ans,error = get.find_roster(tra)
-    return json.dumps({"result":ans}),error
+
+@app.route('/trainer/<pokemon>')
+def get_trainer_of_pokemon(pokemon):
+    ans, error = query.trainer.find_owners(pokemon)
+    return json.dumps({"result": ans}), error
+
+
+@app.route('/pokemon/<trainer>')
+def get_pokemon_of_trainer(trainer):
+    ans, error = query.pokemon.find_roster(trainer)
+    return json.dumps({"result": ans}), error
+
 
 @app.route('/trainer/<trainer>/<pokemon>', methods=['DELETE'])
-def delete_from_trainer(trainer,pokemon):
-    t_id = get.get_trainer_id(trainer)
-    pok_id = get.get_pokeon_id(pokemon)
-    query = f"DELETE FROM Owned_by\
-            WHERE pokemon_id = {pok_id} AND trainer_id = {t_id};"
-    if not t_id or not pok_id:
-        return "Not Found",404
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            connection.commit()
-            return json.dumps({"deleted":f"{pokemon} of {trainer}"}),200
-    except IntegrityError:
-        return "Not Found",404
+def delete_from_trainer(trainer, pokemon):
+    return query.trainer.delete_from_trainer(trainer, pokemon)
 
 
-@app.route('/trainer/evolve/<trainer>/<pokemon>', methods=['PATCH'])
-def evolve_pokemon(trainer,pokemon):
-    t_id = get.get_trainer_id(trainer)
-    if not t_id:
-        return f"Not Found {trainer}", 404
-
-    if pokemon not in queries.find_roster(trainer):
-        return f"{pokemon} isn\'t owned by {trainer}",404
-
-    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon}"
-    pok_details = requests.get(url=url, verify=False)
-    try:
-        url = pok_details.json()["species"]["url"]
-    except Exception as ex:
-        return f"Not Found: {pokemon}",404
-
-    url = requests.get(url=url, verify=False).json()["evolution_chain"]["url"]
-    details = requests.get(url=url, verify=False).json()
-    try:
-        evolved_pok = details["chain"]["evolves_to"][0]["evolves_to"][0]["species"]["name"]
-    except KeyError:
-        return f"Can not evolve {pokemon}",300
-
-    url = f"https://pokeapi.co/api/v2/pokemon/{evolved_pok}"
-
-    evolve_pok = requests.get(url=url, verify=False).json()
-    query = f"""UPDATE Owned_by 
-    SET pokemon_id = {evolve_pok['id']} 
-    WHERE trainer_id = {t_id} AND pokemon_id = {pok_details.json()['id']};"""
-
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            connection.commit()
-            return "succeed",200
-    except IntegrityError:
-        return f"Duplicate entry \'26-24\' for key \'PRIMARY",500
+# @app.route('/trainer/evolve/<trainer>/<pokemon>', methods=['PATCH'])
+# def evolve_pokemon(trainer,pokemon):
+#     t_id = get.get_trainer_id(trainer)
+#     if not t_id:
+#         return f"Not Found {trainer}", 404
+#
+#     if pokemon not in queries.find_roster(trainer):
+#         return f"{pokemon} isn\'t owned by {trainer}",404
+#
+#     url = f"https://pokeapi.co/api/v2/pokemon/{pokemon}"
+#     pok_details = requests.get(url=url, verify=False)
+#     try:
+#         url = pok_details.json()["species"]["url"]
+#     except Exception as ex:
+#         return f"Not Found: {pokemon}",404
+#
+#     url = requests.get(url=url, verify=False).json()["evolution_chain"]["url"]
+#     details = requests.get(url=url, verify=False).json()
+#     try:
+#         evolved_pok = details["chain"]["evolves_to"][0]["evolves_to"][0]["species"]["name"]
+#     except KeyError:
+#         return f"Can not evolve {pokemon}",300
+#
+#     url = f"https://pokeapi.co/api/v2/pokemon/{evolved_pok}"
+#
+#     evolve_pok = requests.get(url=url, verify=False).json()
+#     query = f"""UPDATE Owned_by
+#     SET pokemon_id = {evolve_pok['id']}
+#     WHERE trainer_id = {t_id} AND pokemon_id = {pok_details.json()['id']};"""
+#
+#     try:
+#         with connection.cursor() as cursor:
+#             cursor.execute(query)
+#             connection.commit()
+#             return "succeed",200
+#     except IntegrityError:
+#         return f"Duplicate entry \'26-24\' for key \'PRIMARY",500
 
 
 if __name__ == '__main__':

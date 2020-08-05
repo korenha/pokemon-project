@@ -21,7 +21,7 @@ CREATE TABLE Trainer
 (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(20) NOT NULL,
-    town VARCHAR(20),
+    town VARCHAR(20)
 );
 
 
