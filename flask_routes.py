@@ -30,6 +30,16 @@ def get_by_type(type):
     ans,error = queries.find_by_type(type)
     return json.dumps({"result":ans}),error
 
+@app.route('/pokemon/trainer/<pok>')
+def get_trainer_of_pok(pok):
+    ans,error = queries.find_owners(pok)
+    return json.dumps({"result":ans}),error
+
+@app.route('/trainer/pokemon/<tra>')
+def get_pok_of_trainer(tra):
+    ans,error = queries.find_roster(tra)
+    return json.dumps({"result":ans}),error
+
 @app.route('/trainer/<trainer>/<pokemon>', methods=['DELETE'])
 def delete_from_trainer(trainer,pokemon):
     t_id = pokemon_insert.get_trainer_id(trainer)
@@ -47,15 +57,43 @@ def delete_from_trainer(trainer,pokemon):
         return "Not Found",404
 
 
-# update_type("vileplume")
-# add_pok({"id":10100,
-#         "name": "raichu-alola",
-#         "height": 7,
-#          "weight": 210,
-#          "types": ["electric","psychic"]
-#          })
+@app.route('/trainer/evolve/<trainer>/<pokemon>', methods=['PATCH'])
+def evolve_pokemon(trainer,pokemon):
+    t_id = pokemon_insert.get_trainer_id(trainer)
+    if not t_id:
+        return f"Not Found {trainer}", 404
 
-# print(get_by_type("grass"))
+    if pokemon not in queries.find_roster(trainer):
+        return f"{pokemon} isn\'t owned by {trainer}",404
+
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon}"
+    pok_details = requests.get(url=url, verify=False)
+    try:
+        url = pok_details.json()["species"]["url"]
+    except Exception as ex:
+        return f"Not Found: {pokemon}",404
+
+    url = requests.get(url=url, verify=False).json()["evolution_chain"]["url"]
+    details = requests.get(url=url, verify=False).json()
+    try:
+        evolved_pok = details["chain"]["evolves_to"][0]["evolves_to"][0]["species"]["name"]
+    except KeyError:
+        return f"Can not evolve {pokemon}",300
+
+    url = f"https://pokeapi.co/api/v2/pokemon/{evolved_pok}"
+
+    evolve_pok = requests.get(url=url, verify=False).json()
+    query = f"""UPDATE Owned_by 
+    SET pokemon_id = {evolve_pok['id']} 
+    WHERE trainer_id = {t_id} AND pokemon_id = {pok_details.json()['id']};"""
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            connection.commit()
+            return "succeed",200
+    except IntegrityError:
+        return f"Duplicate entry \'26-24\' for key \'PRIMARY",500
 
 
 if __name__ == '__main__':
