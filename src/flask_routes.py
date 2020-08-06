@@ -1,8 +1,6 @@
 from flask import Flask
-import query
+from src import models
 import json
-
-# TODO: return error in update and delete
 
 
 app = Flask(__name__)
@@ -10,22 +8,22 @@ app = Flask(__name__)
 
 @app.route('/types/<pokemon>', methods=['PATCH'])
 def update_type(pokemon):
-    return query.pokemon_type.update(pokemon)
+    return models.pokemon_type.update(pokemon)
 
 
 @app.route('/pokemon/<pokemon>', methods=['POST'])
 def add_pokemon(pokemon):
-    return query.pokemon.add(pokemon)
+    return models.pokemon.add(pokemon)
 
 
 @app.route('/types/<type_>')
 def get_pokemon_by_type(type_):
-    return query.pokemon.find_pokemon_by_type(type_)
+    return models.pokemon.find_pokemon_by_type(type_)
 
 
 @app.route('/trainer/<pokemon>')
 def get_trainer_of_pokemon(pokemon):
-    result = query.trainer.find_owners(pokemon)
+    result = models.trainer.find_owners(pokemon)
 
     if result == "error":
         return json.dumps({"error": "internal error"}), 500
@@ -38,7 +36,7 @@ def get_trainer_of_pokemon(pokemon):
 
 @app.route('/pokemon/<trainer>')
 def get_pokemon_of_trainer(trainer):
-    result = query.pokemon.find_roster(trainer)
+    result = models.pokemon.find_roster(trainer)
 
     if result == "error":
         return json.dumps({"error": "internal error"}), 500
@@ -51,12 +49,12 @@ def get_pokemon_of_trainer(trainer):
 
 @app.route('/trainer/<trainer>/<pokemon>', methods=['DELETE'])
 def delete_from_trainer(trainer, pokemon):
-    return query.trainer.delete_from_trainer(trainer, pokemon)
+    return models.trainer.delete_from_trainer(trainer, pokemon)
 
 
-@app.route('/trainer/evolve/<trainer>/<pokemon>', methods=['PATCH'])
+@app.route('/evolve/<trainer>/<pokemon>', methods=['PATCH'])
 def evolve_pokemon(trainer, pokemon):
-    return query.pokemon.evolve(trainer, pokemon)
+    return models.pokemon.evolve(trainer, pokemon)
 
 
 if __name__ == '__main__':

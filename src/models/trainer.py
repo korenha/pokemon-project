@@ -23,7 +23,7 @@ def get_trainer_id(trainer):
     try:
         with connection.cursor() as cursor:
             # name, town = trainer.split(' ')
-            # query = f"SELECT id FROM trainer WHERE name = '{name}' and town = '{town}';"
+            # models = f"SELECT id FROM trainer WHERE name = '{name}' and town = '{town}';"
             query = f"SELECT id FROM Trainer WHERE name = '{trainer}'"
             cursor.execute(query)
             result = cursor.fetchone()
